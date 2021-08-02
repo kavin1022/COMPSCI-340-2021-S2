@@ -2,11 +2,12 @@
     The starting program to use for Operating Systems Assignment 1 2021
     written by Robert Sheehan
 
-    Modified by: put your name here
-    UPI: put your login here
+    Modified by: Pinghang Fan
+    UPI: pfan450
 
     By submitting a program you are claiming that you and only you have made
     adjustments and additions to this code.
+    gcc -O2 a1.0.c -o a1.0 -lm -lpthread
  */
 
 #include <stdio.h> 
