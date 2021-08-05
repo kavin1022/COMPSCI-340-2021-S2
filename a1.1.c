@@ -23,6 +23,7 @@
 #include <math.h>
 
 #define SIZE    16
+pthread_mutex_t lock;
 
 struct size_and_data {
     int size;
@@ -69,6 +70,7 @@ void *split_data(void *params) {
     struct size_and_data array = args.array;
     struct bin_info *bins = args.bins;
     for (int i = 0; i < array.size; i++) {
+        pthread_mutex_lock(&lock);
         int number = array.data[i];
         if (number < 250) {
             bins[0].data[bins[0].size++] = number;
@@ -79,6 +81,7 @@ void *split_data(void *params) {
         } else {
             bins[3].data[bins[3].size++] = number;
         }
+        pthread_mutex_unlock(&lock);
     }
 }
 
@@ -123,6 +126,7 @@ int main(int argc, char *argv[]) {
     struct bin_info bins[4];
     struct thread_args args[4];
     pthread_t bin_threads[4];
+    pthread_mutex_init(&lock, NULL);
 
 	if (argc < 2) {
 		the_array.size = SIZE;
@@ -193,4 +197,5 @@ int main(int argc, char *argv[]) {
     }
 
     exit(EXIT_SUCCESS);
+    pthread_mutex_destroy(&lock);
 }
