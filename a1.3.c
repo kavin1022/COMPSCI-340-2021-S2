@@ -7,7 +7,7 @@
 
     By submitting a program you are claiming that you and only you have made
     adjustments and additions to this code.
-    gcc -O2 a1.2.c -o a1.2 -lm -lpthread
+    gcc -O2 a1.3.c -o a1.3 -lm -lpthread
 
  */
 
@@ -107,8 +107,7 @@ void move_back(struct size_and_data array, struct bin_info bins[]) {
 }
 
 /* The slow insertion sort. */
-void *insertion(void *args) {
-    struct bin_info bin = *(struct bin_info *)args;
+void insertion(struct bin_info bin) {
     for (int i = 1; i < bin.size; i++) {
         for (int j = i; j > 0; j--) {
             if (bin.data[j-1] > bin.data[j]) {
@@ -130,7 +129,6 @@ int main(int argc, char *argv[]) {
     pthread_t bin_threads[4];
     pthread_t sort_threads[4];
     pthread_mutex_init(&lock, NULL);
-    pthread_mutex_init(&sortLock, NULL);
 
 	if (argc < 2) {
 		the_array.size = SIZE;
@@ -179,35 +177,43 @@ int main(int argc, char *argv[]) {
     }
     printf("Total size of bins: %d\n", sum);
 
-    for (int i = 0; i < 4; i++) {
-        if (pthread_create(&sort_threads[i], NULL, &insertion, (void *)&bins[i])) {
-            perror("Problem creating thread.\n");
-            exit(EXIT_FAILURE);
+    //processing creation below
+
+    int piping0[2], piping1[2], piping2[2] ,piping3[2];
+
+    //pipe(piping0);
+    //pipe(piping1);
+
+    pid_t cpid = fork();
+
+    if(cpid != 0){ // the parent
+        printf("hello from parent. ");
+        move_back(the_array, bins);
+
+        times(&finish_times);
+        finish_clock = time(NULL);
+        printf("finish time in clock ticks: %ld\n", finish_times.tms_utime);
+        printf("Total elapsed time in seconds: %ld\n", finish_clock - start_clock);
+
+        if (the_array.size < 1025)
+            print_data(the_array);
+
+        printf(is_sorted(the_array) ? "sorted\n" : "not sorted\n");
+
+        free(the_array.data);
+        for (int i = 0; i < 4; i++) {
+            free(bins[i].data);
         }
+
+        exit(EXIT_SUCCESS);
+        pthread_mutex_destroy(&lock);
+    }else{ // the child
+        for (int i = 0; i < 2; i++) {
+            fork();
+            printf("hello from child. ");
+        }
+        
     }
 
-    for (int i = 0; i < 4; i++) {
-        pthread_join(sort_threads[i], NULL);
-    }
 
-    move_back(the_array, bins);
-
-    times(&finish_times);
-    finish_clock = time(NULL);
-    printf("finish time in clock ticks: %ld\n", finish_times.tms_utime);
-    printf("Total elapsed time in seconds: %ld\n", finish_clock - start_clock);
-
-    if (the_array.size < 1025)
-        print_data(the_array);
-
-    printf(is_sorted(the_array) ? "sorted\n" : "not sorted\n");
-
-    free(the_array.data);
-    for (int i = 0; i < 4; i++) {
-        free(bins[i].data);
-    }
-
-    exit(EXIT_SUCCESS);
-    pthread_mutex_destroy(&lock);
-    pthread_mutex_destroy(&sortLock);
 }
