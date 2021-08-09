@@ -181,13 +181,13 @@ int main(int argc, char *argv[]) {
 
     int piping0[2], piping1[2], piping2[2] ,piping3[2];
 
-    //pipe(piping0);
+    pipe(piping0);
     //pipe(piping1);
 
     pid_t cpid = fork();
 
     if(cpid != 0){ // the parent
-        printf("hello from parent. ");
+        close(piping0[1]); // close the write side, waiting to read
         move_back(the_array, bins);
 
         times(&finish_times);
@@ -207,13 +207,28 @@ int main(int argc, char *argv[]) {
 
         exit(EXIT_SUCCESS);
         pthread_mutex_destroy(&lock);
-    }else{ // the child
-        for (int i = 0; i < 2; i++) {
-            fork();
-            printf("hello from child. ");
+    }else{ //the child
+        pid_t first_fork = fork();
+        
+        if (first_fork != 0){
+            pid_t pid = getpid();
+            printf("hello from first parent, pid= %d \n", pid);
+        }else if(first_fork == 0){
+            pid_t pid = getpid();
+            printf("hello from first child, pid= %d \n", pid);
+        }
+
+        pid_t second_fork = fork();
+        if (second_fork != 0 ){
+            pid_t pid = getpid();
+            printf("hello from second parent, pid= %d \n", pid);
+        }else if (second_fork == 0 && first_fork == 0){
+            pid_t pid = getpid();
+            printf("hello from second child, pid= %d \n", pid);
         }
         
     }
+    
 
 
 }
