@@ -179,17 +179,25 @@ int main(int argc, char *argv[]) {
 
     //processing creation below
 
-    int piping0[2], piping1[2], piping2[2] ,piping3[2];
+    int pipe_fds[2];
+    int *read_fd = &pipe_fds[0];
+    int *write_fd = &pipe_fds[1];
+    pipe(pipe_fds);
 
-    pipe(piping0);
-    //pipe(piping1);
+    int n1 = fork();
+    int n2 = fork();
 
-    pid_t cpid = fork();
+    if (n1 > 0 && n2 > 0) {
+        printf("hello from the main process, pid= %d \n", getpid());
 
-    if(cpid != 0){ // the parent
-        pid_t pid = getpid();
-        printf("hello from the main process, pid= %d \n", pid);
-        close(piping0[1]); // close the write side, waiting to read
+        //insertion(bins[0]); 
+        //insertion(bins[1]); 
+        int other_sum;
+        read(*read_fd, &other_sum, sizeof(int));
+        printf("The sum is: %d\n", other_sum);
+
+        //insertion(bins[2]);
+        //insertion(bins[3]);
         move_back(the_array, bins);
 
         times(&finish_times);
@@ -209,27 +217,18 @@ int main(int argc, char *argv[]) {
 
         exit(EXIT_SUCCESS);
         pthread_mutex_destroy(&lock);
-    }else{ //the child
-    
-        pid_t first_fork = fork();
-        pid_t second_fork = fork();
-        
-        if (first_fork != 0 && second_fork != 0){
-            pid_t pid = getpid();
-            printf("hello from first parent, pid= %d \n", pid);
-        }else if(first_fork == 0 && second_fork != 0){
-            pid_t pid = getpid();
-            printf("hello from first child, pid= %d \n", pid);
-        }
-
-        
-        if (first_fork != 0 && second_fork ==0){
-            pid_t pid = getpid();
-            printf("hello from second parent, pid= %d \n", pid);
-        }else{
-            pid_t pid = getpid();
-            printf("hello from second child, pid= %d \n", pid);
-        }
-        
+    }
+    else if (n1 == 0 && n2 > 0) //thread one
+    {
+        //insertion(bins[1]);
+        int sum = 10;
+        write(*write_fd, &sum, sizeof(int));
+    }
+    else if (n1 > 0 && n2 == 0) // thread two
+    {
+        printf("my id is %d  \n", getpid());
+    }
+    else { //thread three
+        printf("my id is %d \n", getpid());
     }
 }
