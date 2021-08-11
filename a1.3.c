@@ -23,6 +23,8 @@
 #include <math.h>
 
 #define SIZE    16
+#define batch_size 1023
+
 pthread_mutex_t lock;
 pthread_mutex_t sortLock;
 
@@ -179,17 +181,58 @@ int main(int argc, char *argv[]) {
 
     //processing creation below
 
-    int piping0[2], piping1[2], piping2[2] ,piping3[2];
-
+    int piping0[2];
     pipe(piping0);
-    //pipe(piping1);
 
-    pid_t cpid = fork();
+    int piping1[2];
+    pipe(piping1);
 
-    if(cpid != 0){ // the parent
-        pid_t pid = getpid();
-        printf("hello from the main process, pid= %d \n", pid);
-        close(piping0[1]); // close the write side, waiting to read
+    int piping2[2];
+    pipe(piping2);
+
+    int n1 = fork();
+    int n2 = fork();
+
+    if (n1 > 0 && n2 > 0) { //main process
+
+        insertion(bins[0]); 
+
+        /*sorting bins[1]*/
+        close(piping0[1]);
+        int *temp0 = malloc(bins[1].size * sizeof(int));
+        for (int i = 0; i < bins[1].size; i+= batch_size) {
+            read(piping0[0], &temp0[i], sizeof(int) * batch_size);
+        }
+        
+        close(piping0[0]);
+        for (int i = 0; i < bins[1].size; i++) {
+            *(bins[1].data + i) = temp0[i];
+        }
+
+        /*sorting bins[2]*/
+        close(piping1[1]);
+        int *temp1 = malloc(bins[2].size * sizeof(int));
+        for (int i = 0; i < bins[2].size; i+= batch_size) {
+            read(piping1[0], &temp1[i], sizeof(int) * batch_size);
+        }
+        
+        close(piping1[0]);
+        for (int i = 0; i < bins[2].size; i++) {
+            *(bins[2].data + i) = temp1[i];
+        }
+
+        /*sorting bins[3]*/
+        close(piping2[1]);
+        int *temp2 = malloc(bins[3].size * sizeof(int));
+        for (int i = 0; i < bins[3].size; i+= batch_size) {
+            read(piping2[0], &temp2[i], sizeof(int) * batch_size);
+        }
+        
+        close(piping2[0]);
+        for (int i = 0; i < bins[3].size; i++) {
+            *(bins[3].data + i) = temp2[i];
+        }
+
         move_back(the_array, bins);
 
         times(&finish_times);
@@ -209,27 +252,52 @@ int main(int argc, char *argv[]) {
 
         exit(EXIT_SUCCESS);
         pthread_mutex_destroy(&lock);
-    }else{ //the child
-    
-        pid_t first_fork = fork();
-        pid_t second_fork = fork();
-        
-        if (first_fork != 0 && second_fork != 0){
-            pid_t pid = getpid();
-            printf("hello from first parent, pid= %d \n", pid);
-        }else if(first_fork == 0 && second_fork != 0){
-            pid_t pid = getpid();
-            printf("hello from first child, pid= %d \n", pid);
+    }
+    else if (n1 == 0 && n2 > 0) //process one
+    {   
+        close(piping0[0]);
+        insertion(bins[1]);
+        int *temp = malloc(bins[1].size * sizeof(int));
+
+        for (int i = 0; i < bins[1].size; i++) {
+            temp[i] = *(bins[1].data + i);
         }
 
-        
-        if (first_fork != 0 && second_fork ==0){
-            pid_t pid = getpid();
-            printf("hello from second parent, pid= %d \n", pid);
-        }else{
-            pid_t pid = getpid();
-            printf("hello from second child, pid= %d \n", pid);
+        for (int i = 0; i < bins[1].size; i+= batch_size) {
+            write(piping0[1], &temp[i], sizeof(int) * batch_size);
         }
         
+        close(piping0[1]);
+    }
+    else if (n1 > 0 && n2 == 0) // process two
+    {
+        close(piping1[0]);
+        insertion(bins[2]);
+        int *temp = malloc(bins[2].size * sizeof(int));
+
+        for (int i = 0; i < bins[2].size; i++) {
+            temp[i] = *(bins[2].data + i);
+        }
+
+        for (int i = 0; i < bins[2].size; i+= batch_size) {
+            write(piping1[1], &temp[i], sizeof(int) * batch_size);
+        }
+        
+        close(piping1[1]);
+    }
+    else { // process three
+        close(piping2[0]);
+        insertion(bins[3]);
+        int *temp = malloc(bins[3].size * sizeof(int));
+
+        for (int i = 0; i < bins[3].size; i++) {
+            temp[i] = *(bins[3].data + i);
+        }
+
+        for (int i = 0; i < bins[3].size; i+= batch_size) {
+            write(piping2[1], &temp[i], sizeof(int) * batch_size);
+        }
+        
+        close(piping2[1]);
     }
 }
