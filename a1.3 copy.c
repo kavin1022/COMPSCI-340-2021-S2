@@ -188,16 +188,29 @@ int main(int argc, char *argv[]) {
     int n2 = fork();
 
     if (n1 > 0 && n2 > 0) {
-        printf("hello from the main process, pid= %d \n", getpid());
 
-        //insertion(bins[0]); 
-        //insertion(bins[1]); 
-        int other_sum;
-        read(*read_fd, &other_sum, sizeof(int));
-        printf("The sum is: %d\n", other_sum);
+        insertion(bins[0]); 
 
-        //insertion(bins[2]);
-        //insertion(bins[3]);
+        close(*write_fd);
+        int temp[bins[1].size];
+
+        read(*read_fd, &temp, sizeof(temp));
+        close(*read_fd);
+        for (int i = 0; i < bins[1].size; i++) {
+            *(bins[1].data + i) = temp[i];
+        }
+
+        //for (int i = 0; i < bins[1].size; ++i){ //test read
+          //printf("%d ", bins[1].data[i]);
+        //}
+
+        for (int i = 0; i < bins[1].size; ++i){ //test read
+            printf("%d ", temp[i]);
+        }
+            
+
+        insertion(bins[2]);
+        insertion(bins[3]);
         move_back(the_array, bins);
 
         times(&finish_times);
@@ -219,10 +232,20 @@ int main(int argc, char *argv[]) {
         pthread_mutex_destroy(&lock);
     }
     else if (n1 == 0 && n2 > 0) //thread one
-    {
-        //insertion(bins[1]);
-        int sum = 10;
-        write(*write_fd, &sum, sizeof(int));
+    {   
+        close(*read_fd);
+        insertion(bins[1]);
+        int temp[bins[1].size];
+
+        
+        for (int i = 0; i < bins[1].size; i++) {
+            temp[i] = *(bins[1].data + i);
+        }
+
+        printf("temp data below \n");
+
+        write(*write_fd, &temp, sizeof(temp));
+        close(*write_fd);
     }
     else if (n1 > 0 && n2 == 0) // thread two
     {
