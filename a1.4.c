@@ -21,6 +21,7 @@
 #include <time.h>
 #include <pthread.h>
 #include <math.h>
+#include <sys/mman.h>
 
 #define SIZE    16
 #define batch_size 1023
@@ -180,66 +181,37 @@ int main(int argc, char *argv[]) {
     times(&start_times);
     printf("start time in clock ticks: %ld\n", start_times.tms_utime);
 
-
-    int piping0[2];
-    pipe(piping0);
-
-    int piping1[2];
-    pipe(piping1);
-
-    int piping2[2];
-    pipe(piping2);
+    int *comm_memory0, *comm_memory1, *comm_memory2;
+    comm_memory0 = (int *) mmap(NULL, sizeof(int) * bins[1].size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    comm_memory1 = (int *) mmap(NULL, sizeof(int) * bins[2].size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    comm_memory2 = (int *) mmap(NULL, sizeof(int) * bins[3].size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 
     int n1 = fork();
     int n2 = fork();
     
-
     if (n1 > 0 && n2 > 0) { //main process
-        printf("proces id one: %d, process id two: %d \n", n1, n2);
         insertion(bins[0]); 
-
+        waitpid(n1, NULL, 0);
+        waitpid(n2, NULL, 0);
         /*sorting bins[1]*/
-        close(piping0[1]);
-        int *temp0 = malloc(bins[1].size * sizeof(int));
-        for (int i = 0; i < bins[1].size; i+= batch_size) {
-            read(piping0[0], &temp0[i], sizeof(int) * batch_size);
-        }
-        
-        close(piping0[0]);
         for (int i = 0; i < bins[1].size; i++) {
-            *(bins[1].data + i) = temp0[i];
+            *(bins[1].data + i) = comm_memory0[i];
         }
 
         /*sorting bins[2]*/
-        close(piping1[1]);
-        int *temp1 = malloc(bins[2].size * sizeof(int));
-        for (int i = 0; i < bins[2].size; i+= batch_size) {
-            read(piping1[0], &temp1[i], sizeof(int) * batch_size);
-        }
-        
-        close(piping1[0]);
         for (int i = 0; i < bins[2].size; i++) {
-            *(bins[2].data + i) = temp1[i];
+            *(bins[2].data + i) = comm_memory1[i];
         }
 
         /*sorting bins[3]*/
-        close(piping2[1]);
-        int *temp2 = malloc(bins[3].size * sizeof(int));
-        for (int i = 0; i < bins[3].size; i+= batch_size) {
-            read(piping2[0], &temp2[i], sizeof(int) * batch_size);
-        }
-        
-        close(piping2[0]);
         for (int i = 0; i < bins[3].size; i++) {
-            *(bins[3].data + i) = temp2[i];
+            *(bins[3].data + i) = comm_memory2[i];
         }
 
         move_back(the_array, bins);
 
         times(&finish_times);
         finish_clock = time(NULL);
-        waitpid(n1, NULL, 0);
-        waitpid(n2, NULL, 0);
         printf("finish time in clock ticks: %ld, cutime is: %ld \n", finish_times.tms_utime, finish_times.tms_cutime);
         printf("Total elapsed time in seconds: %ld\n", finish_clock - start_clock);
 
@@ -258,49 +230,25 @@ int main(int argc, char *argv[]) {
     }
     else if (n1 == 0 && n2 > 0) //process one
     {   
-        close(piping0[0]);
         insertion(bins[1]);
-        int *temp = malloc(bins[1].size * sizeof(int));
-
         for (int i = 0; i < bins[1].size; i++) {
-            temp[i] = *(bins[1].data + i);
+            comm_memory0[i] = *(bins[1].data + i);
         }
 
-        for (int i = 0; i < bins[1].size; i+= batch_size) {
-            write(piping0[1], &temp[i], sizeof(int) * batch_size);
-        }
-        
-        close(piping0[1]);
     }
     else if (n1 > 0 && n2 == 0) // process two
     {
-        close(piping1[0]);
         insertion(bins[2]);
-        int *temp = malloc(bins[2].size * sizeof(int));
-
         for (int i = 0; i < bins[2].size; i++) {
-            temp[i] = *(bins[2].data + i);
+            comm_memory1[i] = *(bins[2].data + i);
         }
 
-        for (int i = 0; i < bins[2].size; i+= batch_size) {
-            write(piping1[1], &temp[i], sizeof(int) * batch_size);
-        }
-        
-        close(piping1[1]);
     }
     else { // process three
-        close(piping2[0]);
         insertion(bins[3]);
-        int *temp = malloc(bins[3].size * sizeof(int));
-
         for (int i = 0; i < bins[3].size; i++) {
-            temp[i] = *(bins[3].data + i);
+            comm_memory2[i] = *(bins[3].data + i);
         }
 
-        for (int i = 0; i < bins[3].size; i+= batch_size) {
-            write(piping2[1], &temp[i], sizeof(int) * batch_size);
-        }
-        
-        close(piping2[1]);
     }
 }
