@@ -185,7 +185,6 @@ int main(int argc, char *argv[]) {
     finish_clock = time(NULL);
     printf("finish time in clock ticks: %ld\n", finish_times.tms_utime);
     printf("Total elapsed time in seconds: %ld\n", finish_clock - start_clock);
-
     if (the_array.size < 1025)
         print_data(the_array);
 

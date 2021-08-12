@@ -66,12 +66,8 @@ void produce_random_data(struct size_and_data array) {
 }
 
 /* Split some data into a bin. */
-void *split_data(void *params) {
-    struct thread_args args = *(struct thread_args *)params;
-    struct size_and_data array = args.array;
-    struct bin_info *bins = args.bins;
+void split_data(struct size_and_data array, struct bin_info bins[]) {
     for (int i = 0; i < array.size; i++) {
-        pthread_mutex_lock(&lock);
         int number = array.data[i];
         if (number < 250) {
             bins[0].data[bins[0].size++] = number;
@@ -82,7 +78,6 @@ void *split_data(void *params) {
         } else {
             bins[3].data[bins[3].size++] = number;
         }
-        pthread_mutex_unlock(&lock);
     }
 }
 
@@ -156,22 +151,7 @@ int main(int argc, char *argv[]) {
     times(&start_times);
     printf("start time in clock ticks: %ld\n", start_times.tms_utime);
 
-    int *start_of_data = the_array.data;
-    
-    for (int i = 0; i < 4; i++) {
-        args[i].array.size = the_array.size / 4;
-        args[i].array.data = start_of_data;
-        start_of_data += the_array.size / 4; // moving down to the next quarter of the array
-        args[i].bins = bins; // these are pointers
-        if (pthread_create(&bin_threads[i], NULL, &split_data, (void *)&args[i])) {
-            perror("Problem creating thread.\n");
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    for (int i = 0; i < 4; i++) {
-        pthread_join(bin_threads[i], NULL);
-    }
+    split_data(the_array, bins);
 
     int sum = 0;
     for (int i = 0; i < 4; i++) {
