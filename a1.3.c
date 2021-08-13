@@ -172,12 +172,11 @@ int main(int argc, char *argv[]) {
 
     int n1 = fork();
     int n2 = fork();
-    
 
     if (n1 > 0 && n2 > 0) { //main process
-        printf("proces id one: %d, process id two: %d \n", n1, n2);
         insertion(bins[0]); 
-
+        waitpid(n1, NULL, 0);
+        waitpid(n2, NULL, 0);
         /*sorting bins[1]*/
         close(piping0[1]);
         int *temp0 = malloc(bins[1].size * sizeof(int));
@@ -218,8 +217,7 @@ int main(int argc, char *argv[]) {
 
         times(&finish_times);
         finish_clock = time(NULL);
-        waitpid(n1, NULL, 0);
-        waitpid(n2, NULL, 0);
+
         printf("finish time in clock ticks: %ld, cutime is: %ld \n", finish_times.tms_utime, finish_times.tms_cutime);
         printf("Total elapsed time in seconds: %ld\n", finish_clock - start_clock);
 
