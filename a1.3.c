@@ -180,39 +180,38 @@ int main(int argc, char *argv[]) {
 
     if (n1 > 0 && n2 > 0) { //main process
         /*sorting bins[0]*/
-        insertion(bins[0]); 
-
-        close(piping0[1]);
-        close(piping1[1]);
-        close(piping2[1]);
-
-        /*sorting bins[1]*/
+        insertion(bins[0]);
         
+        /*sorting bins[1]*/
+        close(piping0[1]);
         for (int i = 0; i < bins[1].size; i+= batch_size) {
             read(piping0[0], &bins[1].data[i], sizeof(int) * batch_size);
         }
         close(piping0[0]);
 
         /*sorting bins[2]*/
-        
+        close(piping1[1]);
         for (int i = 0; i < bins[2].size; i+= batch_size) {
             read(piping1[0], &bins[2].data[i], sizeof(int) * batch_size);
         }
         close(piping1[0]);
 
         /*sorting bins[3]*/
-        
+        close(piping2[1]);
         for (int i = 0; i < bins[3].size; i+= batch_size) {
             read(piping2[0], &bins[3].data[i], sizeof(int) * batch_size);
         }
         close(piping2[0]);
+
+        waitpid(n1, NULL, 0);
+        waitpid(n2, NULL, 0);
 
         move_back(the_array, bins);
 
         times(&finish_times);
         finish_clock = time(NULL);
 
-        printf("finish time in clock ticks: %ld, cutime is: %ld \n", finish_times.tms_utime, finish_times.tms_cutime);
+        printf("finish time in clock ticks: %ld. Child clock ticks: %ld\n", finish_times.tms_utime + finish_times.tms_cutime, finish_times.tms_cutime);
         printf("Total elapsed time in seconds: %ld\n", finish_clock - start_clock);
 
         if (the_array.size < 1025)
@@ -236,7 +235,6 @@ int main(int argc, char *argv[]) {
             write(piping0[1], &bins[1].data[i], sizeof(int) * batch_size);
         }
         close(piping0[1]);
-        exit(EXIT_SUCCESS);
     }
     else if (n1 > 0 && n2 == 0) // process two
     {
@@ -246,7 +244,6 @@ int main(int argc, char *argv[]) {
             write(piping1[1], &bins[2].data[i], sizeof(int) * batch_size);
         }   
         close(piping1[1]);
-        exit(EXIT_SUCCESS);
     }
     else { // process three
         close(piping2[0]);
@@ -255,6 +252,5 @@ int main(int argc, char *argv[]) {
             write(piping2[1], &bins[3].data[i], sizeof(int) * batch_size);
         }
         close(piping2[1]);
-        exit(EXIT_SUCCESS);
     }
 }
