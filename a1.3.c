@@ -170,48 +170,42 @@ int main(int argc, char *argv[]) {
     int piping2[2];
     pipe(piping2);
 
+    //parent process only
+
     int n1 = fork();
+    //parent forks a child, two process at this point
+
     int n2 = fork();
+    //both parent and child forks again, create four process in total
 
     if (n1 > 0 && n2 > 0) { //main process
+        /*sorting bins[0]*/
         insertion(bins[0]); 
-        waitpid(n1, NULL, 0);
-        waitpid(n2, NULL, 0);
-        /*sorting bins[1]*/
+
         close(piping0[1]);
-        int *temp0 = malloc(bins[1].size * sizeof(int));
-        for (int i = 0; i < bins[1].size; i+= batch_size) {
-            read(piping0[0], &temp0[i], sizeof(int) * batch_size);
-        }
+        close(piping1[1]);
+        close(piping2[1]);
+
+        /*sorting bins[1]*/
         
-        close(piping0[0]);
-        for (int i = 0; i < bins[1].size; i++) {
-            *(bins[1].data + i) = temp0[i];
+        for (int i = 0; i < bins[1].size; i+= batch_size) {
+            read(piping0[0], &bins[1].data[i], sizeof(int) * batch_size);
         }
+        close(piping0[0]);
 
         /*sorting bins[2]*/
-        close(piping1[1]);
-        int *temp1 = malloc(bins[2].size * sizeof(int));
-        for (int i = 0; i < bins[2].size; i+= batch_size) {
-            read(piping1[0], &temp1[i], sizeof(int) * batch_size);
-        }
         
-        close(piping1[0]);
-        for (int i = 0; i < bins[2].size; i++) {
-            *(bins[2].data + i) = temp1[i];
+        for (int i = 0; i < bins[2].size; i+= batch_size) {
+            read(piping1[0], &bins[2].data[i], sizeof(int) * batch_size);
         }
+        close(piping1[0]);
 
         /*sorting bins[3]*/
-        close(piping2[1]);
-        int *temp2 = malloc(bins[3].size * sizeof(int));
-        for (int i = 0; i < bins[3].size; i+= batch_size) {
-            read(piping2[0], &temp2[i], sizeof(int) * batch_size);
-        }
         
-        close(piping2[0]);
-        for (int i = 0; i < bins[3].size; i++) {
-            *(bins[3].data + i) = temp2[i];
+        for (int i = 0; i < bins[3].size; i+= batch_size) {
+            read(piping2[0], &bins[3].data[i], sizeof(int) * batch_size);
         }
+        close(piping2[0]);
 
         move_back(the_array, bins);
 
@@ -238,47 +232,29 @@ int main(int argc, char *argv[]) {
     {   
         close(piping0[0]);
         insertion(bins[1]);
-        int *temp = malloc(bins[1].size * sizeof(int));
-
-        for (int i = 0; i < bins[1].size; i++) {
-            temp[i] = *(bins[1].data + i);
-        }
-
         for (int i = 0; i < bins[1].size; i+= batch_size) {
-            write(piping0[1], &temp[i], sizeof(int) * batch_size);
+            write(piping0[1], &bins[1].data[i], sizeof(int) * batch_size);
         }
-        
         close(piping0[1]);
+        exit(EXIT_SUCCESS);
     }
     else if (n1 > 0 && n2 == 0) // process two
     {
         close(piping1[0]);
         insertion(bins[2]);
-        int *temp = malloc(bins[2].size * sizeof(int));
-
-        for (int i = 0; i < bins[2].size; i++) {
-            temp[i] = *(bins[2].data + i);
-        }
-
         for (int i = 0; i < bins[2].size; i+= batch_size) {
-            write(piping1[1], &temp[i], sizeof(int) * batch_size);
-        }
-        
+            write(piping1[1], &bins[2].data[i], sizeof(int) * batch_size);
+        }   
         close(piping1[1]);
+        exit(EXIT_SUCCESS);
     }
     else { // process three
         close(piping2[0]);
         insertion(bins[3]);
-        int *temp = malloc(bins[3].size * sizeof(int));
-
-        for (int i = 0; i < bins[3].size; i++) {
-            temp[i] = *(bins[3].data + i);
-        }
-
         for (int i = 0; i < bins[3].size; i+= batch_size) {
-            write(piping2[1], &temp[i], sizeof(int) * batch_size);
+            write(piping2[1], &bins[3].data[i], sizeof(int) * batch_size);
         }
-        
         close(piping2[1]);
+        exit(EXIT_SUCCESS);
     }
 }

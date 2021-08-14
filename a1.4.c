@@ -22,6 +22,7 @@
 #include <pthread.h>
 #include <math.h>
 #include <sys/mman.h>
+#include <sys/wait.h>
 
 #define SIZE    16
 #define batch_size 1023
@@ -166,13 +167,13 @@ int main(int argc, char *argv[]) {
     comm_memory1 = (int *) mmap(NULL, sizeof(int) * bins[2].size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
     comm_memory2 = (int *) mmap(NULL, sizeof(int) * bins[3].size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 
-    int n1 = fork();
-    int n2 = fork();
+    pid_t n1 = fork();
+    pid_t n2 = fork();
     
     if (n1 > 0 && n2 > 0) { //main process
         insertion(bins[0]); 
-        waitpid(n1, NULL, 0);
-        waitpid(n2, NULL, 0);
+        waitpid(n1, NULL, 0); 
+        waitpid(n2, NULL, 0); 
         /*sorting bins[1]*/
         for (int i = 0; i < bins[1].size; i++) {
             *(bins[1].data + i) = comm_memory0[i];

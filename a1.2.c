@@ -122,10 +122,7 @@ int main(int argc, char *argv[]) {
     struct size_and_data the_array;
     struct bin_info bins[4];
     struct thread_args args[4];
-    pthread_t bin_threads[4];
     pthread_t sort_threads[4];
-    pthread_mutex_init(&lock, NULL);
-    pthread_mutex_init(&sortLock, NULL);
 
 	if (argc < 2) {
 		the_array.size = SIZE;
@@ -188,6 +185,4 @@ int main(int argc, char *argv[]) {
     }
 
     exit(EXIT_SUCCESS);
-    pthread_mutex_destroy(&lock);
-    pthread_mutex_destroy(&sortLock);
 }

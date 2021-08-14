@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "resource.h": "c"
+        "resource.h": "c",
+        "wait.h": "c"
     }
 }
