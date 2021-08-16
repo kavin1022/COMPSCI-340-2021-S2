@@ -27,9 +27,6 @@
 #define SIZE    16
 #define batch_size 1023
 
-pthread_mutex_t lock;
-pthread_mutex_t sortLock;
-
 struct size_and_data {
     int size;
     int *data;
@@ -38,11 +35,6 @@ struct size_and_data {
 struct bin_info {
     int size;
     int *data;
-};
-
-struct thread_args {
-    struct size_and_data array; // which part of the array to deal with
-    struct bin_info *bins;
 };
 
 void print_data(struct size_and_data array) {
@@ -171,6 +163,7 @@ int main(int argc, char *argv[]) {
         insertion(bins[0]); 
         waitpid(n1, NULL, 0); 
         waitpid(n2, NULL, 0); 
+        printf("process ids are n1 %d n2 %d", n1, n2);
         /*sorting bins[1]*/
         for (int i = 0; i < bins[1].size; i++) {
             *(bins[1].data + i) = comm_memory0[i];
@@ -211,6 +204,8 @@ int main(int argc, char *argv[]) {
         for (int i = 0; i < bins[1].size; i++) {
             comm_memory0[i] = *(bins[1].data + i);
         }
+        wait(NULL);
+
 
     }
     else if (n1 > 0 && n2 == 0) // process two
@@ -219,7 +214,7 @@ int main(int argc, char *argv[]) {
         for (int i = 0; i < bins[2].size; i++) {
             comm_memory1[i] = *(bins[2].data + i);
         }
-
+        
     }
     else { // process three
         insertion(bins[3]);
