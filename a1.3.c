@@ -211,7 +211,7 @@ int main(int argc, char *argv[]) {
         times(&finish_times);
         finish_clock = time(NULL);
 
-        printf("finish time in clock ticks: %ld. Child clock ticks: %ld\n", finish_times.tms_utime + finish_times.tms_cutime, finish_times.tms_cutime);
+        printf("finish time in total clock ticks: %ld. Child clock ticks: %ld\n", finish_times.tms_utime + finish_times.tms_cutime, finish_times.tms_cutime);
         printf("Total elapsed time in seconds: %ld\n", finish_clock - start_clock);
 
         if (the_array.size < 1025)

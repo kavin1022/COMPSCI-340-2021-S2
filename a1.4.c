@@ -124,10 +124,7 @@ void insertion(struct bin_info bin) {
 int main(int argc, char *argv[]) {
     struct size_and_data the_array;
     struct bin_info bins[4];
-    struct thread_args args[4];
-    pthread_t bin_threads[4];
     pthread_t sort_threads[4];
-    pthread_mutex_init(&lock, NULL);
 
 	if (argc < 2) {
 		the_array.size = SIZE;
@@ -193,7 +190,7 @@ int main(int argc, char *argv[]) {
 
         times(&finish_times);
         finish_clock = time(NULL);
-        printf("finish time in clock ticks: %ld, cutime is: %ld \n", finish_times.tms_utime, finish_times.tms_cutime);
+        printf("finish time in total clock ticks: %ld. Child clock ticks: %ld\n", finish_times.tms_utime + finish_times.tms_cutime, finish_times.tms_cutime);
         printf("Total elapsed time in seconds: %ld\n", finish_clock - start_clock);
 
         if (the_array.size < 1025)
@@ -207,7 +204,6 @@ int main(int argc, char *argv[]) {
         }
 
         exit(EXIT_SUCCESS);
-        pthread_mutex_destroy(&lock);
     }
     else if (n1 == 0 && n2 > 0) //process one
     {   
